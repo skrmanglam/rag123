@@ -1,0 +1,12 @@
+question_id,question,answer,category
+faq_001,What is the warranty period?,Our products come with a standard 2-year warranty covering manufacturing defects. Extended warranty options are available for purchase.,warranty
+faq_002,How do I return a product?,You can return any product within 30 days of purchase. Items must be in original condition with all packaging. Contact our support team to initiate a return.,returns
+faq_003,What payment methods do you accept?,We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers. Payment is processed securely through our encrypted payment gateway.,payment
+faq_004,How long does shipping take?,Standard shipping takes 5-7 business days. Express shipping (2-3 days) and overnight shipping options are available at checkout for an additional fee.,shipping
+faq_005,Do you ship internationally?,Yes, we ship to over 100 countries worldwide. International shipping costs and delivery times vary by destination. Customs fees may apply.,shipping
+faq_006,How can I track my order?,Once your order ships, you'll receive a tracking number via email. You can track your package on our website or the carrier's website using this number.,shipping
+faq_007,What is your refund policy?,Refunds are processed within 5-7 business days after we receive your returned item. The refund will be credited to your original payment method.,returns
+faq_008,Can I cancel my order?,Orders can be cancelled within 24 hours of placement. After that, the order enters processing and cannot be cancelled. You may return it after delivery.,orders
+faq_009,Do you offer bulk discounts?,Yes, we offer volume discounts for orders of 10 or more units. Contact our sales team at sales@example.com for a custom quote.,pricing
+faq_010,How do I contact customer support?,You can reach our support team via email at support@example.com, phone at 1-800-123-4567, or live chat on our website. We're available Monday-Friday 9AM-6PM EST.,support
+
