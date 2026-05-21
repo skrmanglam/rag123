@@ -48,7 +48,7 @@ llm:
 # Storage settings
 storage:
   upload_dir: "storage/uploaded_files"
-  faq_dir: "db/rag_builder.db"
+  faq_dir: "storage/faq_files"
 
 # Database settings
 database:
