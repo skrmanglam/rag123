@@ -1,7 +1,12 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import yaml
+import uuid
+from pathlib import Path
 
 
 from db.sqlite_db import SQLiteDB
@@ -11,6 +16,9 @@ from core.retriever import Retriever
 from core.rag_chain import RAGChain
 from core.faq_loader import FAQLoader
 from core.faq_cache import FAQCache
+from core.document_loader import DocumentLoader
+from core.chunker import TextChunker
+from core.prompt_builder import PromptBuilder
 
 
 
@@ -36,6 +44,14 @@ retriever = Retriever(embedder, vector_store)
 faq_loader = FAQLoader()
 
 
+# Initialize document processing components
+doc_loader = DocumentLoader(config['storage']['upload_dir'])
+chunker = TextChunker(
+   chunk_size=config['chunking']['chunk_size'],
+   chunk_overlap=config['chunking']['chunk_overlap']
+)
+
+
 # Initialize FAQ cache
 faq_cache = FAQCache(
    embedder=embedder,
@@ -57,6 +73,20 @@ app = FastAPI(
 )
 
 
+# Add CORS middleware
+app.add_middleware(
+   CORSMiddleware,
+   allow_origins=["*"],
+   allow_credentials=True,
+   allow_methods=["*"],
+   allow_headers=["*"],
+)
+
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 
 
 # Request/Response models
@@ -64,6 +94,12 @@ class ChatRequest(BaseModel):
    question: str
    top_k: Optional[int] = 5
    use_fuzzy_faq: Optional[bool] = False
+
+
+
+
+class SystemPromptRequest(BaseModel):
+   system_prompt: str
 
 
 
@@ -104,20 +140,23 @@ class DocumentInfo(BaseModel):
 
 
 
+class BotCreateRequest(BaseModel):
+   bot_name: str
+   role: str
+   tone: str
+   strictness: str
+   citation_required: bool = True
+   fallback_behavior: str = "say_dont_know"
+   behavior_instructions: Optional[str] = None
+
+
+
+
 # Endpoints
 @app.get("/")
 def root():
-   """Root endpoint."""
-   return {
-       "message": "RAG Chatbot API",
-       "version": "1.0.0",
-       "endpoints": {
-           "chat": "POST /chat/{bot_id}",
-           "bots": "GET /bots",
-           "bot_info": "GET /bots/{bot_id}",
-           "bot_documents": "GET /bots/{bot_id}/documents"
-       }
-   }
+   """Serve the main HTML page."""
+   return FileResponse('static/index.html')
 
 
 
@@ -182,6 +221,159 @@ def get_bot_documents(bot_id: str):
        )
        for doc in documents
    ]
+
+
+
+
+@app.post("/bots", response_model=BotInfo)
+def create_bot(request: BotCreateRequest):
+   """Create a new bot."""
+   # Generate bot_id from bot_name
+   bot_id = request.bot_name.lower().replace(' ', '_')
+  
+   # Check if bot already exists
+   existing_bot = db.get_bot(bot_id)
+   if existing_bot:
+       raise HTTPException(status_code=400, detail="Bot with this name already exists")
+  
+   # Create bot configuration
+   bot_config = {
+       'role': request.role,
+       'tone': request.tone,
+       'strictness': request.strictness,
+       'citation_required': request.citation_required,
+       'fallback_behavior': request.fallback_behavior
+   }
+  
+   # Build system prompt
+   system_prompt = PromptBuilder.build_system_prompt(bot_config)
+  
+   if request.behavior_instructions:
+       system_prompt += f"\n\nAdditional instructions:\n{request.behavior_instructions}"
+  
+   # Save to database
+   success = db.create_bot(
+       bot_id=bot_id,
+       bot_name=request.bot_name,
+       system_prompt=system_prompt,
+       role=request.role,
+       tone=request.tone,
+       strictness=request.strictness,
+       citation_required=request.citation_required,
+       fallback_behavior=request.fallback_behavior
+   )
+  
+   if not success:
+       raise HTTPException(status_code=500, detail="Failed to create bot")
+  
+   # Return created bot
+   bot = db.get_bot(bot_id)
+   return BotInfo(
+       bot_id=bot['bot_id'],
+       bot_name=bot['bot_name'],
+       role=bot.get('role'),
+       tone=bot.get('tone'),
+       strictness=bot.get('strictness'),
+       citation_required=bool(bot.get('citation_required', True)),
+       created_at=bot['created_at']
+   )
+
+
+
+
+@app.post("/bots/{bot_id}/documents")
+async def upload_documents(bot_id: str, files: List[UploadFile] = File(...)):
+   """Upload and process documents for a bot."""
+   # Validate bot exists
+   bot = db.get_bot(bot_id)
+   if not bot:
+       raise HTTPException(status_code=404, detail="Bot not found")
+  
+   results = []
+  
+   for file in files:
+       try:
+           # Validate file type
+           file_ext = Path(file.filename).suffix.lower()
+           if file_ext not in ['.pdf', '.txt', '.md']:
+               results.append({
+                   "file_name": file.filename,
+                   "status": "error",
+                   "message": "Unsupported file type"
+               })
+               continue
+          
+           # Save file
+           file_content = await file.read()
+           file_path = doc_loader.save_file(file_content, file.filename, bot_id)
+          
+           # Create document record
+           document_id = str(uuid.uuid4())
+           db.create_document(
+               document_id=document_id,
+               bot_id=bot_id,
+               file_name=file.filename,
+               file_path=file_path,
+               file_type=file_ext,
+               status='processing'
+           )
+          
+           # Load and process document
+           documents = doc_loader.load_document(file_path, file_ext)
+          
+           # Chunk documents
+           all_chunks = []
+           for doc in documents:
+               chunks = chunker.chunk_text(doc['content'])
+               for i, chunk in enumerate(chunks):
+                   all_chunks.append({
+                       'content': chunk,
+                       'metadata': {
+                           'document_id': document_id,
+                           'file_name': file.filename,
+                           'page': doc.get('page'),
+                           'chunk_index': i
+                       }
+                   })
+          
+           # Embed and store chunks
+           for chunk in all_chunks:
+               chunk_id = str(uuid.uuid4())
+               embedding = embedder.embed_text(chunk['content'])
+              
+               vector_store.add_vector(
+                   vector_id=chunk_id,
+                   vector=embedding,
+                   payload={
+                       'bot_id': bot_id,
+                       'document_id': document_id,
+                       'file_name': file.filename,
+                       'page': chunk['metadata'].get('page'),
+                       'content': chunk['content']
+                   }
+               )
+          
+           # Update document status
+           db.update_document_status(document_id, 'completed')
+          
+           results.append({
+               "file_name": file.filename,
+               "status": "success",
+               "chunks": len(all_chunks)
+           })
+          
+       except Exception as e:
+           # Update document status to failed
+           if 'document_id' in locals():
+               db.update_document_status(document_id, 'failed')
+          
+           results.append({
+               "file_name": file.filename,
+               "status": "error",
+               "message": str(e)
+           })
+  
+   return {"results": results}
 
 
 
@@ -361,23 +553,35 @@ def search_faq(bot_id: str, request: ChatRequest):
    """
    Search FAQ entries for a question.
    Returns matching FAQs above similarity threshold.
+   Supports both vector and fuzzy search methods.
    """
    bot = db.get_bot(bot_id)
    if not bot:
        raise HTTPException(status_code=404, detail="Bot not found")
   
    try:
-       results = faq_cache.search_faq(
-           query=request.question,
-           bot_id=bot_id,
-           top_k=request.top_k or 3
-       )
+       # Choose search method based on use_fuzzy_faq flag
+       if request.use_fuzzy_faq:
+           results = faq_cache.search_faq_fuzzy(
+               query=request.question,
+               bot_id=bot_id,
+               top_k=request.top_k or 3
+           )
+           search_type = "fuzzy"
+       else:
+           results = faq_cache.search_faq(
+               query=request.question,
+               bot_id=bot_id,
+               top_k=request.top_k or 3
+           )
+           search_type = "vector"
       
        return {
            "query": request.question,
            "threshold": faq_cache.similarity_threshold,
            "matches": len(results),
-           "results": results
+           "results": results,
+           "search_type": search_type
        }
    except Exception as e:
        raise HTTPException(status_code=500, detail=f"Error searching FAQ: {str(e)}")
@@ -385,6 +589,51 @@ def search_faq(bot_id: str, request: ChatRequest):
 
 
 
+@app.get("/bots/{bot_id}/system-prompt")
+def get_system_prompt(bot_id: str):
+   """Get the system prompt for a bot."""
+   bot = db.get_bot(bot_id)
+   if not bot:
+       raise HTTPException(status_code=404, detail="Bot not found")
+  
+   return {
+       "bot_id": bot_id,
+       "system_prompt": bot.get('system_prompt', '')
+   }
+
+
+
+
+@app.put("/bots/{bot_id}/system-prompt")
+def update_system_prompt(bot_id: str, request: SystemPromptRequest):
+   """Update the system prompt for a bot."""
+   bot = db.get_bot(bot_id)
+   if not bot:
+       raise HTTPException(status_code=404, detail="Bot not found")
+  
+   if not request.system_prompt.strip():
+       raise HTTPException(status_code=400, detail="System prompt cannot be empty")
+  
+   try:
+       # Update in database
+       conn = db.get_connection()
+       conn.execute(
+           "UPDATE bots SET system_prompt = ? WHERE bot_id = ?",
+           (request.system_prompt, bot_id)
+       )
+       conn.commit()
+       conn.close()
+      
+       return {
+           "message": "System prompt updated successfully",
+           "bot_id": bot_id
+       }
+   except Exception as e:
+       raise HTTPException(status_code=500, detail=f"Error updating system prompt: {str(e)}")
+
+
+
+
 if __name__ == "__main__":
    import uvicorn
-   uvicorn.run(app, host="0.0.0.0", port=8000)
+   uvicorn.run(app, host="0.0.0.0", port=8090)

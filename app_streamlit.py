@@ -99,82 +99,36 @@ def main():
        bots = db.list_bots()
       
        if bots:
-           bot_names = [bot['bot_name'] for bot in bots]
-           selected_bot_name = st.selectbox("Select Bot", ["Create New Bot"] + bot_names)
-          
-           if selected_bot_name != "Create New Bot":
-               selected_bot = next(bot for bot in bots if bot['bot_name'] == selected_bot_name)
-               st.session_state['current_bot'] = selected_bot
-              
-               # Chat Sessions Section
-               st.markdown("---")
-               st.subheader("💬 Chat Sessions")
-              
-               # Initialize sessions in session state
-               if 'chat_sessions' not in st.session_state:
-                   st.session_state['chat_sessions'] = {}
-               if 'current_session_id' not in st.session_state:
-                   st.session_state['current_session_id'] = 'default'
-              
-               bot_id = selected_bot['bot_id']
-              
-               # Get or create sessions for this bot
-               if bot_id not in st.session_state['chat_sessions']:
-                   st.session_state['chat_sessions'][bot_id] = {
-                       'default': {
-                           'name': 'New Chat',
-                           'messages': [],
-                           'created_at': None
-                       }
-                   }
-              
-               # New Chat button
-               if st.button("➕ New Chat", use_container_width=True):
-                   session_id = str(uuid.uuid4())[:8]
-                   st.session_state['chat_sessions'][bot_id][session_id] = {
-                       'name': 'New Chat',
-                       'messages': [],
-                       'created_at': None
-                   }
-                   st.session_state['current_session_id'] = session_id
-                   st.session_state['chat_history'] = []
-                   st.rerun()
-              
-               # Display sessions in a scrollable container
-               sessions = st.session_state['chat_sessions'][bot_id]
-              
-               # Create a container for sessions
-               with st.container():
-                   for session_id, session_data in sessions.items():
-                       col1, col2 = st.columns([4, 1])
-                      
-                       with col1:
-                           # Session button
-                           is_current = session_id == st.session_state.get('current_session_id', 'default')
-                           button_label = f"{'▶ ' if is_current else ''}{session_data['name']}"
-                          
-                           if st.button(button_label, key=f"session_{session_id}", use_container_width=True):
-                               st.session_state['current_session_id'] = session_id
-                               st.session_state['chat_history'] = session_data['messages']
-                               st.rerun()
-                      
-                       with col2:
-                           # Delete button (don't allow deleting if it's the only session)
-                           if len(sessions) > 1 and st.button("🗑️", key=f"del_{session_id}"):
-                               del st.session_state['chat_sessions'][bot_id][session_id]
-                               if session_id == st.session_state.get('current_session_id'):
-                                   # Switch to first available session
-                                   st.session_state['current_session_id'] = list(sessions.keys())[0]
-                                   st.session_state['chat_history'] = sessions[list(sessions.keys())[0]]['messages']
-                               st.rerun()
-           else:
-               st.session_state['current_bot'] = None
+        bot_names = [bot['bot_name'] for bot in bots]
+        bot_options = ["Create New Bot"] + bot_names
+
+        # One source of truth - the selectbox key
+        if 'selected_bot_name' not in st.session_state:
+            st.session_state['selected_bot_name'] = "Create New Bot"
+        if st.session_state['selected_bot_name'] not in bot_options:
+            st.session_state['selected_bot_name'] = "Create New Bot"
+
+        st.selectbox("Select Bot", bot_options, key='selected_bot_name')
+
+        if st.session_state['selected_bot_name'] != "Create New Bot":
+            selected_bot = next(bot for bot in bots if bot['bot_name'] == st.session_state['selected_bot_name'])
+            bot_id = selected_bot['bot_id']
+
+            if st.session_state.get('current_bot_id') != bot_id:
+                st.session_state['current_bot_id'] = bot_id
+                st.session_state['current_session_id'] = 'default'
+                st.session_state['chat_history'] = []
+
+            st.markdown("---")
+            st.success(f"✅ **{selected_bot['bot_name']}**")
+            st.caption(f"Role: {selected_bot.get('role', 'N/A').replace('_', ' ').title()}")
        else:
-           st.info("No bots created yet. Create your first bot below!")
-           st.session_state['current_bot'] = None
-  
+        st.info("No bots created yet. Create your first bot below!")
    # Main content area
-   if st.session_state.get('current_bot') is None:
+   selected_name = st.session_state.get('selected_bot_name', 'Create New Bot')
+   current_bot = next((b for b in db.list_bots() if b['bot_name'] == selected_name), None)
+
+   if current_bot is None:
        # Bot creation form
        st.header("Create New Bot")
       
@@ -249,16 +203,21 @@ def main():
                )
               
                if success:
-                   st.success(f"Bot '{bot_name}' created successfully!")
-                   st.rerun()
+                    st.session_state['selected_bot_name'] = bot_name
+                    st.success(f"Bot '{bot_name}' created successfully!")
+                    st.rerun()
                else:
                    st.error("Bot with this name already exists!")
   
    else:
        # Bot is selected - show document upload and chat interface
-       bot = st.session_state['current_bot']
+       bot = current_bot
        bot_id = bot['bot_id']
        bot_name = bot['bot_name']
+      
+       # Ensure FAQ fuzzy search state is initialized
+       if 'use_fuzzy_faq' not in st.session_state:
+           st.session_state['use_fuzzy_faq'] = False
       
        st.header(f"Bot: {bot_name}")
       
@@ -357,6 +316,81 @@ def main():
                st.info("No documents uploaded yet.")
       
        with tab2:
+           # Initialize sessions in session state
+           if 'chat_sessions' not in st.session_state:
+               st.session_state['chat_sessions'] = {}
+           if 'current_session_id' not in st.session_state:
+               st.session_state['current_session_id'] = 'default'
+          
+           # Get or create sessions for this bot
+           if bot_id not in st.session_state['chat_sessions']:
+               st.session_state['chat_sessions'][bot_id] = {
+                   'default': {
+                       'name': 'New Chat',
+                       'messages': [],
+                       'created_at': None
+                   }
+               }
+               st.session_state['chat_history'] = []
+               st.session_state['current_session_id'] = 'default'
+           else:
+               # Bot exists, ensure current_session_id is valid for this bot
+               if st.session_state['current_session_id'] not in st.session_state['chat_sessions'][bot_id]:
+                   st.session_state['current_session_id'] = 'default'
+                   if 'default' not in st.session_state['chat_sessions'][bot_id]:
+                       st.session_state['chat_sessions'][bot_id]['default'] = {
+                           'name': 'New Chat',
+                           'messages': [],
+                           'created_at': None
+                       }
+               # Load chat history from current session
+               session_id = st.session_state['current_session_id']
+               st.session_state['chat_history'] = st.session_state['chat_sessions'][bot_id][session_id]['messages']
+          
+           # Chat Sessions Management in an expander
+           with st.expander("💬 Chat Sessions", expanded=False):
+               col_new, col_sessions = st.columns([1, 3])
+              
+               with col_new:
+                   if st.button("➕ New Chat", use_container_width=True):
+                       session_id = str(uuid.uuid4())[:8]
+                       st.session_state['chat_sessions'][bot_id][session_id] = {
+                           'name': 'New Chat',
+                           'messages': [],
+                           'created_at': None
+                       }
+                       st.session_state['current_session_id'] = session_id
+                       st.session_state['chat_history'] = []
+                       st.rerun()
+              
+               with col_sessions:
+                   sessions = st.session_state['chat_sessions'].get(bot_id, {})
+                   if sessions:
+                       for session_id, session_data in sessions.items():
+                           if not session_data or not isinstance(session_data, dict):
+                               continue
+                           if 'name' not in session_data or 'messages' not in session_data:
+                               continue
+                          
+                           col_btn, col_del = st.columns([5, 1])
+                           with col_btn:
+                               is_current = session_id == st.session_state.get('current_session_id', 'default')
+                               button_label = f"{'▶ ' if is_current else '  '}{session_data['name']}"
+                               if st.button(button_label, key=f"sess_{session_id}", use_container_width=True):
+                                   st.session_state['current_session_id'] = session_id
+                                   st.session_state['chat_history'] = session_data['messages']
+                                   st.rerun()
+                          
+                           with col_del:
+                               if len(sessions) > 1 and st.button("🗑️", key=f"del_{session_id}"):
+                                   del st.session_state['chat_sessions'][bot_id][session_id]
+                                   if session_id == st.session_state.get('current_session_id'):
+                                       st.session_state['current_session_id'] = list(sessions.keys())[0]
+                                       st.session_state['chat_history'] = sessions[list(sessions.keys())[0]]['messages']
+                                   st.rerun()
+          
+           st.markdown("---")
+          
            # Header with clear chat button and FAQ search option
            col1, col2, col3 = st.columns([2, 1, 1])
            with col1:
@@ -501,7 +535,7 @@ def main():
           
            with col2:
                if st.button("🔄 Refresh Bot Config", help="Reload bot configuration from database"):
-                   st.session_state['current_bot'] = db.get_bot(bot_id)
+                   current_bot = db.get_bot(bot_id)
                    st.success("Configuration refreshed!")
                    st.rerun()
           
@@ -528,7 +562,7 @@ def main():
                    conn.close()
                   
                    # Update session state
-                   st.session_state['current_bot']['system_prompt'] = new_system_prompt
+                   current_bot['system_prompt'] = new_system_prompt
                   
                    st.success("✅ System prompt updated! Changes will apply to new conversations immediately.")
                    st.info("💡 Tip: The updated prompt is used right away - no restart needed!")
@@ -697,3 +731,9 @@ def main():
 
 if __name__ == "__main__":
    main()
+
+
+
+
+
+
