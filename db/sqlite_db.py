@@ -77,14 +77,14 @@ class SQLiteDB:
   
    # Document operations
    def create_document(self, document_id: str, bot_id: str, file_name: str,
-                      file_path: str, file_type: str) -> bool:
+                      file_path: str, file_type: str, status: str = 'pending') -> bool:
        """Create a new document record."""
        conn = self.get_connection()
        try:
            conn.execute("""
-               INSERT INTO documents (document_id, bot_id, file_name, file_path, file_type)
-               VALUES (?, ?, ?, ?, ?)
-           """, (document_id, bot_id, file_name, file_path, file_type))
+               INSERT INTO documents (document_id, bot_id, file_name, file_path, file_type, status)
+               VALUES (?, ?, ?, ?, ?, ?)
+           """, (document_id, bot_id, file_name, file_path, file_type, status))
            conn.commit()
            return True
        except sqlite3.IntegrityError:
