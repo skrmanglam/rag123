@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -65,11 +66,24 @@ faq_cache = FAQCache(
 rag_chain = RAGChain(retriever, config['llm'], faq_cache=faq_cache)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+   """Ensure storage dirs and Qdrant collection exist on startup."""
+   Path(config['database']['path']).parent.mkdir(parents=True, exist_ok=True)
+   Path(config['storage']['upload_dir']).mkdir(parents=True, exist_ok=True)
+   Path(config['storage']['faq_dir']).mkdir(parents=True, exist_ok=True)
+   if not vector_store.collection_exists():
+       vector_store.create_collection(embedder.get_embedding_dimension())
+   faq_cache.initialize_faq_collection()
+   yield
+
+
 # Create FastAPI app
 app = FastAPI(
    title="RAG Chatbot API",
    description="API for RAG-based chatbots",
-   version="1.0.0"
+   version="1.0.0",
+   lifespan=lifespan
 )
 
 
@@ -636,4 +650,4 @@ def update_system_prompt(bot_id: str, request: SystemPromptRequest):
 
 if __name__ == "__main__":
    import uvicorn
-   uvicorn.run(app, host="0.0.0.0", port=8090)
+   uvicorn.run(app, host="0.0.0.0", port=8000)

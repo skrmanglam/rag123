@@ -37,7 +37,15 @@ class RAGChain:
            self.client = OpenAI(api_key=api_key)
        elif self.provider == 'openai_compatible':
            base_url = llm_config.get('openai_compatible', {}).get('base_url', 'http://localhost:1234/v1')
-           api_key = llm_config.get('openai_compatible', {}).get('api_key', 'not-needed')
+           api_key = (
+               os.getenv('OPENROUTER_API_KEY')
+               or os.getenv('OPENAI_API_KEY')
+               or llm_config.get('openai_compatible', {}).get('api_key')
+           )
+           if not api_key:
+               raise ValueError(
+                   "Set OPENROUTER_API_KEY (or OPENAI_API_KEY) for openai_compatible provider"
+               )
            self.client = OpenAI(base_url=base_url, api_key=api_key)
        elif self.provider == 'ollama':
            self.ollama_base_url = llm_config.get('ollama', {}).get('base_url', 'http://localhost:11434')

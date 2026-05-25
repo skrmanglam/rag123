@@ -21,25 +21,24 @@ vector_store:
 
 # LLM settings
 llm:
-  provider: "ollama" # Options: "ollama", "openai", "openai_compatible"
+  # Options: "ollama" (local), "openai", "openai_compatible" (OpenRouter, LM Studio, etc.)
+  provider: "openai_compatible"
 
-  # Ollama settings(FREE - runs locally)
+  # Ollama settings (FREE - runs locally; switch provider to "ollama" for local dev)
   ollama:
     base_url: "http://localhost:11434"
-    model: "phi3:mini" # Use exact model name from `ollama list`
-    # Examples: "phi3:mini", "llama3.2", etc.
-    # Check installed models: ollama list
+    model: "phi3:mini"
 
-  # OpenAI settings (PAID - requires API key)
+  # OpenAI settings (set OPENAI_API_KEY in .env)
   openai:
-    api_key: "gpt-3.5-turbo"
-    api_key: "" # set via OPEN_API_KEY env var
+    model: "gpt-3.5-turbo"
+    api_key: ""
 
-  # OpenAI-compatible endpoints (e.g., LM Studio, vLLM, etc.)
+  # OpenRouter (HF Spaces / cloud demo) — set OPENROUTER_API_KEY in Space secrets or .env
   openai_compatible:
-    base_url: "http://localhost:1234/v1"
-    model: "local-model" # Use exact model name from your compatible endpoint)
-    api_key: "not-needed"
+    base_url: "https://openrouter.ai/api/v1"
+    model: "openai/gpt-oss-120b:free"
+    api_key: ""
 
   # Common settings
   temperature: 0.1

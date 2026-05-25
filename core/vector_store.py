@@ -154,6 +154,27 @@ class VectorStore:
            )
        )
   
+   def add_vector(self, vector_id: str, vector: List[float], payload: Dict[str, Any]):
+       """Upsert a single vector (used by document upload API)."""
+       if not self.collection_exists():
+           raise RuntimeError(
+               f"Collection '{self.collection_name}' does not exist. "
+               "Create it before adding vectors."
+           )
+       point = PointStruct(
+           id=vector_id,
+           vector=vector,
+           payload={
+               'chunk_id': vector_id,
+               'bot_id': payload.get('bot_id'),
+               'document_id': payload.get('document_id'),
+               'file_name': payload.get('file_name'),
+               'page_number': payload.get('page'),
+               'text': payload.get('content') or payload.get('text', ''),
+           }
+       )
+       self.client.upsert(collection_name=self.collection_name, points=[point])
+
    def collection_exists(self) -> bool:
        """Check if the collection exists."""
        collections = self.client.get_collections().collections

@@ -1,0 +1,16 @@
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+.git/
+.vscode/
+.idea/
+.env
+.env.local
+qdrant_storage/
+*.log
+db/*.db
+.cache/
+models/
+agent-transcripts/

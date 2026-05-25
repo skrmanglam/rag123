@@ -48,6 +48,12 @@ if [ "$LLM_PROVIDER" = "openai" ]; then
 elif [ "$LLM_PROVIDER" = "ollama" ]; then
    echo "✅ Using Ollama (local LLM)"
    echo "   Make sure Ollama is running: ollama serve"
+elif [ "$LLM_PROVIDER" = "openai_compatible" ]; then
+   if [ -z "$OPENROUTER_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
+       echo "⚠️  OPENROUTER_API_KEY is not set (required for OpenRouter)"
+   else
+       echo "✅ OpenRouter / compatible API key is set"
+   fi
 else
    echo "✅ Using $LLM_PROVIDER"
 fi
@@ -116,7 +122,6 @@ cleanup() {
    echo ""
    echo "Shutting down services..."
    kill $FASTAPI_PID 2>/dev/null || true
-   kill $STREAMLIT_PID 2>/dev/null || true
    echo "Services stopped."
 }
 
@@ -147,31 +152,16 @@ done
 
 
 echo ""
-
-
-# Start Streamlit in background
-echo "Starting Streamlit app..."
-streamlit run app_streamlit.py > streamlit.log 2>&1 &
-STREAMLIT_PID=$!
-
-
-# Wait a bit for Streamlit to start
-sleep 3
-
-
-echo ""
 echo "=================================="
 echo "✅ All Services Running!"
 echo "=================================="
 echo ""
-echo "📊 Streamlit UI:  http://localhost:8501"
+echo "🌐 Web UI:        http://localhost:8000"
 echo "🔌 FastAPI:       http://localhost:8000"
 echo "📚 API Docs:      http://localhost:8000/docs"
 echo "🗄️  Qdrant:       http://localhost:6333"
 echo ""
-echo "Logs:"
-echo "  FastAPI:   tail -f fastapi.log"
-echo "  Streamlit: tail -f streamlit.log"
+echo "Logs: tail -f fastapi.log"
 echo ""
 echo "Press Ctrl+C to stop all services"
 echo "=================================="
