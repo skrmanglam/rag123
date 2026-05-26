@@ -49,6 +49,7 @@ db/rag_builder.db
 
 
 # Storage
+/storage/
 storage/uploaded_files/*
 !storage/uploaded_files/.gitkeep
 

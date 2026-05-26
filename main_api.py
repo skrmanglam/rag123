@@ -79,6 +79,15 @@ app.add_middleware(
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Startup event to create collection
+@app.on_event("startup")
+def startup_event():
+    """Create Qdrant collection if it doesn't exist."""
+    try:
+        vector_store.create_collection(embedder.embedding_dim)
+    except Exception as e:
+        print(f"Warning: Failed to create collection: {e}")
+
 
 # Request/Response models
 class ChatRequest(BaseModel):
