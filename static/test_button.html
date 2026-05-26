@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Delete Button</title>
+</head>
+<body>
+    <h1>Test Delete Button</h1>
+    <button id="deleteBotBtn" style="padding: 10px 20px; background: red; color: white; border: none; cursor: pointer;">
+        🗑️ Delete Bot (Test)
+    </button>
+    
+    <script>
+        console.log('Script loaded');
+        
+        // Test if button exists
+        const btn = document.getElementById('deleteBotBtn');
+        console.log('Button found:', btn);
+        
+        // Add click listener
+        btn.addEventListener('click', function() {
+            console.log('Button clicked!');
+            alert('Delete button works!');
+        });
+        
+        console.log('Event listener added');
+    </script>
+</body>
+</html>

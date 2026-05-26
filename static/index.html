@@ -1,261 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>RAG Chatbot Builder</title>
-   <link rel="stylesheet" href="/static/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Chatbot Builder</title>
+    <link rel="stylesheet" href="/static/styles.css?v=5.0">
 </head>
 <body>
-   <div class="container">
-       <!-- Sidebar -->
-       <aside class="sidebar">
-           <div class="sidebar-header">
-               <h2>🤖 RAG Builder</h2>
-           </div>
-          
-           <div class="bot-selector">
-               <label for="botSelect">Select Bot:</label>
-               <select id="botSelect">
-                   <option value="">Create New Bot</option>
-               </select>
-           </div>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 RAG Builder</h2>
+            </div>
+            
+            <div class="bot-selector">
+                <label for="botSelect">Select Bot:</label>
+                <select id="botSelect">
+                    <option value="">Create New Bot</option>
+                </select>
+            </div>
 
+            <div id="chatSessions" class="chat-sessions" style="display: none;">
+                <h3>💬 Chat Sessions</h3>
+                <button id="newSessionBtn" class="btn btn-secondary btn-sm">➕ New Chat</button>
+                <div id="sessionList" class="session-list"></div>
+            </div>
 
-           <div id="chatSessions" class="chat-sessions" style="display: none;">
-               <h3>💬 Chat Sessions</h3>
-               <button id="newSessionBtn" class="btn btn-secondary btn-sm">➕ New Chat</button>
-               <div id="sessionList" class="session-list"></div>
-           </div>
+            <div class="sidebar-footer">
+                <p class="version">v1.0.0</p>
+            </div>
+        </aside>
 
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Welcome Screen (shown when no bot selected) -->
+            <div id="welcomeScreen" class="welcome-screen">
+                <h1>🤖 Welcome to RAG Chatbot Builder</h1>
+                <p>Create intelligent chatbots from your documents in minutes!</p>
+                <div class="welcome-actions">
+                    <button id="createBotBtn" class="btn btn-primary btn-lg">Create Your First Bot</button>
+                </div>
+            </div>
 
-           <div class="sidebar-footer">
-               <p class="version">v1.0.0</p>
-           </div>
-       </aside>
+            <!-- Bot Creation Form -->
+            <div id="botCreationForm" class="bot-creation-form" style="display: none;">
+                <h2>Create New Bot</h2>
+                <form id="createBotFormElement">
+                    <div class="form-group">
+                        <label for="botName">Bot Name *</label>
+                        <input type="text" id="botName" required placeholder="e.g., HR Assistant">
+                    </div>
 
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="botRole">Bot Role *</label>
+                            <select id="botRole" required>
+                                <option value="hr_assistant">HR Assistant</option>
+                                <option value="legal_assistant">Legal Assistant</option>
+                                <option value="policy_assistant">Policy Assistant</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
 
-       <!-- Main Content -->
-       <main class="main-content">
-           <!-- Welcome Screen (shown when no bot selected) -->
-           <div id="welcomeScreen" class="welcome-screen">
-               <h1>🤖 Welcome to RAG Chatbot Builder</h1>
-               <p>Create intelligent chatbots from your documents in minutes!</p>
-               <div class="welcome-actions">
-                   <button id="createBotBtn" class="btn btn-primary btn-lg">Create Your First Bot</button>
-               </div>
-           </div>
+                        <div class="form-group">
+                            <label for="botTone">Tone *</label>
+                            <select id="botTone" required>
+                                <option value="formal">Formal</option>
+                                <option value="friendly" selected>Friendly</option>
+                                <option value="concise">Concise</option>
+                            </select>
+                        </div>
+                    </div>
 
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="botStrictness">Answer Strictness *</label>
+                            <select id="botStrictness" required>
+                                <option value="strict" selected>Strict (Only from documents)</option>
+                                <option value="balanced">Balanced (Primarily documents)</option>
+                                <option value="flexible">Flexible (Documents + general knowledge)</option>
+                            </select>
+                        </div>
 
-           <!-- Bot Creation Form -->
-           <div id="botCreationForm" class="bot-creation-form" style="display: none;">
-               <h2>Create New Bot</h2>
-               <form id="createBotFormElement">
-                   <div class="form-group">
-                       <label for="botName">Bot Name *</label>
-                       <input type="text" id="botName" required placeholder="e.g., HR Assistant">
-                   </div>
+                        <div class="form-group">
+                            <label for="botFallback">Fallback Behavior *</label>
+                            <select id="botFallback" required>
+                                <option value="say_dont_know" selected>Say "I don't know"</option>
+                                <option value="ask_rephrase">Ask to rephrase</option>
+                                <option value="escalate">Escalate to human</option>
+                            </select>
+                        </div>
+                    </div>
 
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="botCitation" checked>
+                            Require Citations
+                        </label>
+                    </div>
 
-                   <div class="form-row">
-                       <div class="form-group">
-                           <label for="botRole">Bot Role *</label>
-                           <select id="botRole" required>
-                               <option value="hr_assistant">HR Assistant</option>
-                               <option value="legal_assistant">Legal Assistant</option>
-                               <option value="policy_assistant">Policy Assistant</option>
-                               <option value="custom">Custom</option>
-                           </select>
-                       </div>
+                    <div class="form-group">
+                        <label for="botInstructions">Additional Instructions (Optional)</label>
+                        <textarea id="botInstructions" rows="3" placeholder="e.g., Always be polite and professional..."></textarea>
+                    </div>
 
+                    <div class="form-group">
+                        <label for="botPassword">
+                            🔒 Password Protection (Optional)
+                            <span class="help-text">Leave empty for public bot</span>
+                        </label>
+                        <input
+                            type="password"
+                            id="botPassword"
+                            class="form-control"
+                            placeholder="Enter password to protect this bot (optional)"
+                        >
+                        <small class="form-text text-muted">
+                            If set, users will need this password to access the bot
+                        </small>
+                    </div>
 
-                       <div class="form-group">
-                           <label for="botTone">Tone *</label>
-                           <select id="botTone" required>
-                               <option value="formal">Formal</option>
-                               <option value="friendly" selected>Friendly</option>
-                               <option value="concise">Concise</option>
-                           </select>
-                       </div>
-                   </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancelBotBtn" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Bot</button>
+                    </div>
+                </form>
+            </div>
 
+            <!-- Bot Interface (shown when bot is selected) -->
+            <div id="botInterface" class="bot-interface" style="display: none;">
+                <div class="bot-header">
+                    <h2 id="botTitle"></h2>
+                    <div class="bot-tabs">
+                        <button class="tab-btn active" data-tab="chat">💬 Chat</button>
+                        <button class="tab-btn" data-tab="documents">📄 Documents</button>
+                        <button class="tab-btn" data-tab="faq">❓ FAQ</button>
+                        <button class="tab-btn" data-tab="config">⚙️ Config</button>
+                    </div>
+                </div>
 
-                   <div class="form-row">
-                       <div class="form-group">
-                           <label for="botStrictness">Answer Strictness *</label>
-                           <select id="botStrictness" required>
-                               <option value="strict" selected>Strict (Only from documents)</option>
-                               <option value="balanced">Balanced (Primarily documents)</option>
-                               <option value="flexible">Flexible (Documents + general knowledge)</option>
-                           </select>
-                       </div>
+                <!-- Chat Tab -->
+                <div id="chatTab" class="tab-content active">
+                    <div class="chat-controls">
+                        <div class="chat-controls-left">
+                            <label class="fuzzy-toggle">
+                                <input type="checkbox" id="fuzzyFaqToggle">
+                                <span>Fuzzy FAQ Search</span>
+                            </label>
+                            <span id="faqModeIndicator" class="faq-mode-indicator"></span>
+                        </div>
+                        <div class="chat-controls-right">
+                            <span id="chatMessageCount" class="chat-message-count"></span>
+                            <button id="clearChatBtn" class="btn btn-sm btn-secondary">🗑️ Clear Chat</button>
+                        </div>
+                    </div>
+                    
+                    <div id="chatMessages" class="chat-messages"></div>
+                    
+                    <div class="chat-input-container">
+                        <textarea id="chatInput" placeholder="Ask a question..." rows="2"></textarea>
+                        <button id="sendBtn" class="btn btn-primary">Send</button>
+                    </div>
+                </div>
 
+                <!-- Documents Tab -->
+                <div id="documentsTab" class="tab-content">
+                    <h3>Upload Documents</h3>
+                    <div class="upload-section">
+                        <input type="file" id="documentUpload" multiple accept=".pdf,.txt,.md">
+                        <button id="uploadDocsBtn" class="btn btn-primary">Upload & Process</button>
+                    </div>
+                    
+                    <h3>Uploaded Documents</h3>
+                    <div id="documentsList" class="documents-list">
+                        <p class="text-muted">No documents uploaded yet.</p>
+                    </div>
+                </div>
 
-                       <div class="form-group">
-                           <label for="botFallback">Fallback Behavior *</label>
-                           <select id="botFallback" required>
-                               <option value="say_dont_know" selected>Say "I don't know"</option>
-                               <option value="ask_rephrase">Ask to rephrase</option>
-                               <option value="escalate">Escalate to human</option>
-                           </select>
-                       </div>
-                   </div>
+                <!-- FAQ Tab -->
+                <div id="faqTab" class="tab-content">
+                    <h3>FAQ Management</h3>
+                    <div class="upload-section">
+                        <input type="file" id="faqUpload" accept=".csv">
+                        <button id="uploadFaqBtn" class="btn btn-primary">Upload FAQ CSV</button>
+                        <div id="faqValidation" class="faq-validation" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="faq-stats" id="faqStats" style="display: none;">
+                        <h4>FAQ Statistics</h4>
+                        <div id="faqStatsContent"></div>
+                    </div>
 
+                    <div class="faq-test">
+                        <h4>Test FAQ Search</h4>
+                        <div class="faq-test-controls">
+                            <div class="form-group">
+                                <label>Search Method</label>
+                                <select id="faqSearchMethod">
+                                    <option value="vector">Vector Search (Embeddings)</option>
+                                    <option value="fuzzy">Fuzzy Search (No Embeddings)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Top Results</label>
+                                <input type="number" id="faqTopK" min="1" max="10" value="3">
+                            </div>
+                        </div>
+                        <input type="text" id="faqTestQuery" placeholder="Enter a question to test...">
+                        <button id="testFaqBtn" class="btn btn-secondary">Search FAQs</button>
+                        <div id="faqTestResults"></div>
+                    </div>
 
-                   <div class="form-group">
-                       <label>
-                           <input type="checkbox" id="botCitation" checked>
-                           Require Citations
-                       </label>
-                   </div>
+                    <div class="faq-actions">
+                        <button id="deleteFaqBtn" class="btn btn-danger">Delete All FAQs</button>
+                    </div>
+                </div>
 
+                <!-- Config Tab -->
+                <div id="configTab" class="tab-content">
+                    <div class="config-header">
+                        <h3>Bot Configuration</h3>
+                        <button id="refreshConfigBtn" class="btn btn-sm btn-secondary">🔄 Refresh</button>
+                    </div>
+                    <div id="botConfigDetails" class="config-details"></div>
+                    
+                    <div class="config-actions">
+                        <button id="deleteBotBtn" class="btn btn-danger">🗑️ Delete Bot</button>
+                    </div>
+                    
+                    <div class="system-prompt-editor">
+                        <h3>System Prompt</h3>
+                        <p class="text-muted">Edit the system prompt to change how the bot behaves. Changes apply immediately.</p>
+                        <textarea id="systemPromptEditor" rows="10"></textarea>
+                        <button id="updatePromptBtn" class="btn btn-primary">💾 Update System Prompt</button>
+                    </div>
+                    
+                    <div class="api-documentation">
+                        <h3>API Endpoint</h3>
+                        <div class="api-endpoint">
+                            <code id="apiEndpoint"></code>
+                        </div>
+                        <h4>Example API Call</h4>
+                        <pre id="apiExample"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
-                   <div class="form-group">
-                       <label for="botInstructions">Additional Instructions (Optional)</label>
-                       <textarea id="botInstructions" rows="3" placeholder="e.g., Always be polite and professional..."></textarea>
-                   </div>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
 
-
-                   <div class="form-actions">
-                       <button type="button" id="cancelBotBtn" class="btn btn-secondary">Cancel</button>
-                       <button type="submit" class="btn btn-primary">Create Bot</button>
-                   </div>
-               </form>
-           </div>
-
-
-           <!-- Bot Interface (shown when bot is selected) -->
-           <div id="botInterface" class="bot-interface" style="display: none;">
-               <div class="bot-header">
-                   <h2 id="botTitle"></h2>
-                   <div class="bot-tabs">
-                       <button class="tab-btn active" data-tab="chat">💬 Chat</button>
-                       <button class="tab-btn" data-tab="documents">📄 Documents</button>
-                       <button class="tab-btn" data-tab="faq">❓ FAQ</button>
-                       <button class="tab-btn" data-tab="config">⚙️ Config</button>
-                   </div>
-               </div>
-
-
-               <!-- Chat Tab -->
-               <div id="chatTab" class="tab-content active">
-                   <div class="chat-controls">
-                       <div class="chat-controls-left">
-                           <label class="fuzzy-toggle">
-                               <input type="checkbox" id="fuzzyFaqToggle">
-                               <span>Fuzzy FAQ Search</span>
-                           </label>
-                           <span id="faqModeIndicator" class="faq-mode-indicator"></span>
-                       </div>
-                       <div class="chat-controls-right">
-                           <span id="chatMessageCount" class="chat-message-count"></span>
-                           <button id="clearChatBtn" class="btn btn-sm btn-secondary">🗑️ Clear Chat</button>
-                       </div>
-                   </div>
-                  
-                   <div id="chatMessages" class="chat-messages"></div>
-                  
-                   <div class="chat-input-container">
-                       <textarea id="chatInput" placeholder="Ask a question..." rows="2"></textarea>
-                       <button id="sendBtn" class="btn btn-primary">Send</button>
-                   </div>
-               </div>
-
-
-               <!-- Documents Tab -->
-               <div id="documentsTab" class="tab-content">
-                   <h3>Upload Documents</h3>
-                   <div class="upload-section">
-                       <input type="file" id="documentUpload" multiple accept=".pdf,.txt,.md">
-                       <button id="uploadDocsBtn" class="btn btn-primary">Upload & Process</button>
-                   </div>
-                  
-                   <h3>Uploaded Documents</h3>
-                   <div id="documentsList" class="documents-list">
-                       <p class="text-muted">No documents uploaded yet.</p>
-                   </div>
-               </div>
-
-
-               <!-- FAQ Tab -->
-               <div id="faqTab" class="tab-content">
-                   <h3>FAQ Management</h3>
-                   <div class="upload-section">
-                       <input type="file" id="faqUpload" accept=".csv">
-                       <button id="uploadFaqBtn" class="btn btn-primary">Upload FAQ CSV</button>
-                       <div id="faqValidation" class="faq-validation" style="display: none;"></div>
-                   </div>
-                  
-                   <div class="faq-stats" id="faqStats" style="display: none;">
-                       <h4>FAQ Statistics</h4>
-                       <div id="faqStatsContent"></div>
-                   </div>
-
-
-                   <div class="faq-test">
-                       <h4>Test FAQ Search</h4>
-                       <div class="faq-test-controls">
-                           <div class="form-group">
-                               <label>Search Method</label>
-                               <select id="faqSearchMethod">
-                                   <option value="vector">Vector Search (Embeddings)</option>
-                                   <option value="fuzzy">Fuzzy Search (No Embeddings)</option>
-                               </select>
-                           </div>
-                           <div class="form-group">
-                               <label>Top Results</label>
-                               <input type="number" id="faqTopK" min="1" max="10" value="3">
-                           </div>
-                       </div>
-                       <input type="text" id="faqTestQuery" placeholder="Enter a question to test...">
-                       <button id="testFaqBtn" class="btn btn-secondary">Search FAQs</button>
-                       <div id="faqTestResults"></div>
-                   </div>
-
-
-                   <div class="faq-actions">
-                       <button id="deleteFaqBtn" class="btn btn-danger">Delete All FAQs</button>
-                   </div>
-               </div>
-
-
-               <!-- Config Tab -->
-               <div id="configTab" class="tab-content">
-                   <div class="config-header">
-                       <h3>Bot Configuration</h3>
-                       <button id="refreshConfigBtn" class="btn btn-sm btn-secondary">🔄 Refresh</button>
-                   </div>
-                   <div id="botConfigDetails" class="config-details"></div>
-                  
-                   <div class="system-prompt-editor">
-                       <h3>System Prompt</h3>
-                       <p class="text-muted">Edit the system prompt to change how the bot behaves. Changes apply immediately.</p>
-                       <textarea id="systemPromptEditor" rows="10"></textarea>
-                       <button id="updatePromptBtn" class="btn btn-primary">💾 Update System Prompt</button>
-                   </div>
-                  
-                   <div class="api-documentation">
-                       <h3>API Endpoint</h3>
-                       <div class="api-endpoint">
-                           <code id="apiEndpoint"></code>
-                       </div>
-                       <h4>Example API Call</h4>
-                       <pre id="apiExample"></pre>
-                   </div>
-               </div>
-           </div>
-       </main>
-   </div>
-
-
-   <!-- Loading Overlay -->
-   <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-       <div class="spinner"></div>
-       <p>Processing...</p>
-   </div>
-
-
-   <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=5.0"></script>
 </body>
 </html>
-

@@ -1,64 +1,63 @@
-# RAG Builder configuration file
+# RAG Builder Configuration
 
 # Chunking settings
 chunking:
-  chunk_size: 800 # approximate tokens
-  chunk_overlap: 150 # approximate tokens
-
+  chunk_size: 800  # approximate tokens
+  chunk_overlap: 150  # approximate tokens
+  
 # Embedding settings
 embedding:
   model_name: "all-MiniLM-L6-v2"
-
+  
 # Retrieval settings
 retrieval:
   top_k: 5
-
+  
 # Vector store settings
 vector_store:
   collection_name: "rag_documents"
   host: "localhost"
   port: 6333
-
+  
 # LLM settings
 llm:
-  # Options: "ollama" (local), "openai", "openai_compatible" (OpenRouter, LM Studio, etc.)
-  provider: "openai_compatible"
-
-  # Ollama settings (FREE - runs locally; switch provider to "ollama" for local dev)
+  provider: "openai_compatible"  # Options: "ollama", "openai", "openai_compatible"
+  
+  # Ollama settings (FREE - runs locally)
   ollama:
     base_url: "http://localhost:11434"
-    model: "phi3:mini"
-
-  # OpenAI settings (set OPENAI_API_KEY in .env)
+    model: "phi3:mini"  # Use exact model name from 'ollama list'
+    # Examples: "phi3:mini", "llama3.2", "mistral", "gemma2", etc.
+    # Check installed models: ollama list
+  
+  #OpenAI settings (requires API key)
   openai:
     model: "gpt-3.5-turbo"
-    api_key: ""
-
-  # OpenRouter (HF Spaces / cloud demo) — set OPENROUTER_API_KEY in Space secrets or .env
+    api_key: ""  # Set via OPENAI_API_KEY env var
+  
+  # OpenAI-compatible endpoints (e.g., OpenRouter)
   openai_compatible:
     base_url: "https://openrouter.ai/api/v1"
-    model: "openai/gpt-oss-120b:free"
-    api_key: ""
-
+    model: "openai/gpt-oss-120b:free" # Replace with your preferred OpenRouter model
+    api_key: "" # Leave empty to load dynamically from env/secrets
+  
   # Common settings
   temperature: 0.1
   max_tokens: 500
-
+  
 # Storage settings
 storage:
   upload_dir: "storage/uploaded_files"
   faq_dir: "storage/faq_files"
-
+  
 # Database settings
 database:
   path: "db/rag_builder.db"
 
 # FAQ Cache settings
-faq: 
-  similarity_threshold: 0.80 # Minimum similarity score for FAQ matc(0.0-1.0)
+faq:
+  similarity_threshold: 0.80  # Minimum similarity score for FAQ match (0.0-1.0)
   # Higher threshold = stricter matching (more precise)
-  # Lower threshold = looser matching ( more result)
+  # Lower threshold = looser matching (more results)
   # Recommended: 0.75-0.85 for good semantic matching
   # Note: 0.80 allows for question variations while maintaining relevance
-  
-    
