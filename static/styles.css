@@ -153,6 +153,7 @@ body {
     flex-direction: column;
     overflow: hidden;
     background: var(--background);
+     -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
 }
 
 /* Welcome Screen */
@@ -191,6 +192,8 @@ body {
     background: var(--surface);
     border-radius: 0.5rem;
     box-shadow: var(--shadow-lg);
+     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS *
 }
 
 .bot-creation-form h2 {
@@ -853,6 +856,25 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .container {
+        height: 100vh;
+        height: -webkit-fill-available; /* Fix for mobile browsers */
+    }
+
+    body {
+        position: fixed;
+        width: 100%;
+        height: 100vh;
+        height: -webkit-fill-available;
+        overflow: hidden;
+    }
+
+    .main-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        height: 100%;
+    }
     .sidebar {
         width: 100%;
         max-width: 280px;
@@ -875,6 +897,21 @@ body {
     .bot-creation-form {
         margin: 1rem;
         padding: 1.5rem;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* Ensure form inputs are scrollable on mobile */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+        -webkit-appearance: none;
+    }
+
+    /* Fix for iOS Safari bottom bar */
+    .chat-input-container {
+        padding-bottom: env(safe-area-inset-bottom, 1rem);
     }
 }
 
